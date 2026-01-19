@@ -32,7 +32,7 @@ import {
   ResponsiveContainer,
   Tooltip
 } from 'recharts';
-import { GoogleGenAI } from "@google/genai";
+
 import { DIAGNOSTIC_CATEGORIES, UNIVERSITY_LEVELS, DIAGNOSTIC_QUESTIONS } from './types';
 
 // --- Types for Flow ---
@@ -206,12 +206,15 @@ const DiagnosticFrame = () => (
   </section>
 );
 
-const DiagnosticTool = ({ onStart }: { onStart: () => void }) => {
-  const [scores, setScores] = useState<Record<string, number>>(
-    DIAGNOSTIC_CATEGORIES.reduce((acc, cat) => ({ ...acc, [cat.id]: 50 }), {})
-  );
+// App JSX
 
-  const PAI_DISPLAY = useMemo(() => calculatePAI(scores), [scores]);
+const DiagnosticTool = ({ onStart }: { onStart: () => void }) => {
+
+  const PAI_DISPLAY = finalResult?.pai ?? 0;
+
+  const [scores, setScores] = useState<Record<string, number>>(
+  Object.fromEntries(DIAGNOSTIC_CATEGORIES.map(c => [c.id, 50]))
+);
 
   const predictedLevel = useMemo(() => {
     return UNIVERSITY_LEVELS.find(l => PAI_DISPLAY >= l.range[0] && PAI_DISPLAY <= l.range[1]) || UNIVERSITY_LEVELS[UNIVERSITY_LEVELS.length - 1];
@@ -281,24 +284,24 @@ const DiagnosticTool = ({ onStart }: { onStart: () => void }) => {
 
                 <div className="flex items-baseline gap-4 mb-4">
                   <span className="text-7xl md:text-9xl font-black text-white leading-none tracking-tighter">
-                    {PAI_DISPLAY} {/* [1/3] 시뮬레이터 카드 */}
+                    {finalResult.pai} {/* [1/3] 시뮬레이터 카드 */}
                   </span>
                   <span className="text-xl md:text-3xl text-slate-500 font-black tracking-widest opacity-50">/ 100</span>
                 </div>
                 
                 <p className="text-teal-300/80 text-[10px] md:text-xs font-bold mb-10 md:mb-14">
-                  SKY 합격생 평균 패턴 대비 달성률: {PAI_DISPLAY}%
+                  SKY 합격생 평균 패턴 대비 달성률: {finalResult.pai}%
                 </p>
                 
                 <div className="mb-12 md:mb-16 bg-white/5 rounded-3xl p-6 md:p-8 border border-white/5 shadow-inner">
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-widest">SKY Benchmark Match</span>
-                    <span className="font-black text-teal-400 text-lg md:text-2xl">{PAI_DISPLAY}%</span>
+                    <span className="font-black text-teal-400 text-lg md:text-2xl">{finalResult.pai}%</span>
                   </div>
                   <div className="w-full bg-slate-900 h-5 md:h-6 rounded-full overflow-hidden p-1 border border-white/5">
                     <div 
                       className="h-full bg-gradient-to-r from-blue-700 via-blue-400 to-teal-400 transition-all duration-1000 ease-out rounded-full shadow-[0_0_20px_rgba(45,212,191,0.4)]" 
-                      style={{ width: `${PAI_DISPLAY}%` }}
+                      style={{ width: `${finalResult.pai}%` }}
                     />
                   </div>
                   <p className="mt-4 text-[9px] md:text-[11px] text-slate-500 italic">
@@ -523,6 +526,41 @@ export default function App() {
   const [step, setStep] = useState<AppStep>('HOME');
   const [userInfo, setUserInfo] = useState<UserInfo>({ name: '', grade: '', phone: '', uniqueCode: '' });
   const [answers, setAnswers] = useState<Record<string, number>>({});
+
+  // ===============================
+// 🔒 SSOT: 최종 결과 단일 진실원
+// ===============================
+const finalResult = useMemo<{
+  pai: number;
+  categories: Record<string, number>;
+} | null>(() => {
+  if (Object.keys(answers).length === 0) return null;
+
+  const categoryScores: Record<string, number> = {};
+
+  DIAGNOSTIC_CATEGORIES.forEach(cat => {
+    const catQuestions = DIAGNOSTIC_QUESTIONS.filter(
+      q => q.category === cat.id
+    );
+
+    const sum = catQuestions.reduce(
+      (acc, q) => acc + (answers[q.id] || 0),
+      0
+    );
+
+    const maxPossible = catQuestions.length * 4;
+
+    categoryScores[cat.id] =
+      maxPossible === 0 ? 0 : (sum / maxPossible) * 100;
+  });
+
+  return {
+    categories: categoryScores,
+    pai: calculatePAI(categoryScores)
+  };
+}, [answers]);
+
+  
   const [currentQuestionIdx, setCurrentQuestionIdx] = useState(0);
   const [aiReport, setAiReport] = useState<string>("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -565,83 +603,45 @@ export default function App() {
     }
   };
 
-  const calculateFinalScores = useMemo(() => {
-    const categoryScores: Record<string, number> = {};
-    
-    DIAGNOSTIC_CATEGORIES.forEach(cat => {
-      const catQuestions = DIAGNOSTIC_QUESTIONS.filter(q => q.category === cat.id);
-      const sum = catQuestions.reduce((acc, q) => acc + (answers[q.id] || 0), 0);
-      const maxPossible = catQuestions.length * 4; 
-      // 영역별 점수를 정밀하게(소수점 유지) 합산
-      categoryScores[cat.id] = (sum / maxPossible) * 100;
-    });
 
-    const totalPAI = calculatePAI(categoryScores);
 
-    return { categories: categoryScores, total: totalPAI };
-  }, [answers]);
+const generateFinalReport = async () => {
+  if (!finalResult) return;
 
-  const generateFinalReport = async () => {
-    setStep('PROCESSING');
-    try {
-      const ai = new GoogleGenAI({
-  apiKey: import.meta.env.VITE_GEMINI_API_KEY});
-      const { total, categories } = calculateFinalScores;
-      const PAI_DISPLAY = total; // 유일한 진실원 (Single Source of Truth)
-      
-      const prompt = `
-        SGS 잠재실력 정밀 진단 리포트를 엄격한 형식 복구 및 계산 정확도 지침에 따라 생성해 주세요.
-        공식 명칭: SGS (SKY Growth System)
-        진단 모델: Standard v1.0 [Strict Mode]
-        학생 이름: ${userInfo.name}
-        학년: ${userInfo.grade}
-        
-        [가장 중요 - 데이터 엄수]
-        최종 PAI 지수는 반드시 ${PAI_DISPLAY}점으로 작성하세요. AI가 본문의 내용을 통해 점수를 임의로 변경하지 마십시오. {/* [2/3] AI 프롬프트 주입 */}
-        모든 영역의 판정은 아래 제공된 ${PAI_DISPLAY}점에 근거한 UNIVERSITY_LEVELS 기준을 따르십시오.
+  setStep('PROCESSING');
 
-        [엄격한 형식 복구 및 조정 지침]
-        1. 핵심 진단 요약:
-           - 제목: "1. 핵심 진단 요약"
-           - 구성: (정의) / (병목) / (6-8주 흐름) / (우선행동)
-           - 종합 판정: "상태 위치: 위험 ─ 경고 ─ 주의 ● 안정 ─ 우수" 형태의 텍스트 바를 포함하세요.
-        2. 영역별 정밀 분석 (6대 진단 축):
-           - ① 학습 시간의 질, ② 집중력 & 몰입 지속력, ③ 끈기 & 회복탄력성(Grit), ④ 메타인지, ⑤ 학습 전략 레벨, ⑥ 학습 환경 & 구조 통제
-           - 모든 영역에 반드시 아래 순서로 항목을 복구하세요:
-             1) 판정: [최우수/안정/주의/위험/심각 중 택1]
-             2) 데이터 근거: (SKY 평균 대비 % 또는 행동 지표 1줄)
-             3) SGS 분석 코멘트: (냉정하고 단정적인 판정 중심의 3~5문장)
-             4) 미래 시뮬레이션:
-                - 형식: "⚡ 미래 시뮬레이션 : [해당 영역에 대한 1줄 경고]" 을 박스(블록) 최상단에 배치.
-                - 내용: 그 아래에 상세 시나리오(장면, 고교 결과, 징후)를 기술.
-        3. 대학 레벨 예측 (Projection):
-           - "Growth Scenario" 문단 확장 유지. PAI 지수 ${PAI_DISPLAY}점에 기반한 정확한 대학 레벨을 시뮬레이션 하세요.
-        4. 단계별 구조 교정 로드맵:
-           - 각 Phase마다 반드시 "행동 지침"을 '▶' 기호를 사용하여 정확히 3개씩만 기술하세요. (내용은 절대 수정 금지, 기호만 변경)
-        5. 섹션 5·6·7 복구: 5. 학부모 전용 코멘트, 6. 학생 전용 코멘트, 7. SGS 재진단 권고를 원문 그대로 포함하세요.
-        6. 시각적 계층화 규칙 (응답 텍스트 구조):
-           - 대목차: "1. 제목", "2. 제목" ...
-           - 중목차: "① 제목", "② 제목" ...
-           - 소목차: "판정:", "데이터 근거:", "SGS 분석 코멘트:", "⚡ 미래 시뮬레이션 :"
-           - 본문: 일반 텍스트
-        7. 공통 규칙: 숫자는 강조하지 말고 본문 크기로 유지, "SKY Growth System" 명칭 엄수, 섹션 사이 구분선 1회 사용.
+  try {
+    const response = await fetch(
+      import.meta.env.VITE_SGS_GAS_URL,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userInfo,
+          pai: finalResult.pai,
+          categories: finalResult.categories
+        })
+      }
+    );
 
-        말투: 냉정하고 전문적인 프리미엄 교육 컨설턴트 톤.
-      `;
+    const json = await response.json();
 
-      const response = await ai.models.generateContent({
-  model: 'gemini-3-pro-preview',
-  contents: prompt,
-});
+    if (!json.success || !json.reportText) {
+      throw new Error("Invalid GAS response");
+    }
 
-if (!response?.text) {
-  throw new Error("Empty AI response");
-}
+    setAiReport(json.reportText);
+    setStep('REPORT');
 
-setAiReport(response.text);
-setStep('REPORT');
-}
-  };
+  } catch (err) {
+    console.error(err);
+    alert("리포트 생성 중 오류가 발생했습니다.");
+    setStep('TEST');
+  }
+};
+
+
+
 
   // --- Header for Flow Steps ---
   const FlowHeader = () => (
@@ -808,17 +808,24 @@ setStep('REPORT');
 
 
   if (step === 'REPORT') {
-    const { total, categories } = calculateFinalScores;
-    const PAI_DISPLAY = total; // 유일한 진실원 (Single Source of Truth)
+    
+    if (!finalResult) return null;
 
-    const radarData = DIAGNOSTIC_CATEGORIES.map(cat => ({
-      subject: cat.name,
-      student: Math.round(categories[cat.id]),
-      sky: 100
-    }));
+const radarData = DIAGNOSTIC_CATEGORIES.map(cat => ({
+  subject: cat.name,
+  student: Math.round(finalResult.categories[cat.id]),
+  sky: 100
+}));
 
-    const level = UNIVERSITY_LEVELS.find(l => PAI_DISPLAY >= l.range[0] && PAI_DISPLAY <= l.range[1]) || UNIVERSITY_LEVELS[UNIVERSITY_LEVELS.length - 1];
+const level =
+  UNIVERSITY_LEVELS.find(
+    l =>
+      finalResult.pai >= l.range[0] &&
+      finalResult.pai <= l.range[1]
+  ) || UNIVERSITY_LEVELS.at(-1);
 
+
+ 
     return (
       <div className="min-h-screen bg-gray-50 pt-20 pb-20 print:pt-0 print:pb-0 print:bg-white">
         <FlowHeader />
@@ -851,11 +858,11 @@ setStep('REPORT');
                   <p className="text-teal-400 font-black uppercase tracking-widest text-xs mb-4">Potential Academic Index</p>
                   <div className="flex items-baseline justify-center md:justify-start gap-4 mb-4">
                     <span className="text-8xl md:text-9xl font-black tracking-tighter leading-none">
-                      {PAI_DISPLAY} {/* [3/3] 리포트 헤더 점수 */}
+                      {finalResult.pai} {/* [3/3] 리포트 헤더 점수 */}
                     </span>
                     <span className="text-2xl md:text-3xl text-slate-500 font-bold opacity-50">/ 100</span>
                   </div>
-                  <p className="text-teal-300/80 text-[10px] md:text-xs font-bold mb-8 md:mb-12">SKY 합격생 평균 패턴 대비 달성률: {PAI_DISPLAY}%</p>
+                  <p className="text-teal-300/80 text-[10px] md:text-xs font-bold mb-8 md:mb-12">SKY 합격생 평균 패턴 대비 달성률: {finalResult.pai}%</p>
                   <div className="p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20 backdrop-blur-md print:bg-slate-800">
                     <p className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-widest">Predicted Tier</p>
                     <p className="text-2xl md:text-3xl font-black text-white">{level.grade}: {level.name}</p>
