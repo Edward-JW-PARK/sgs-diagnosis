@@ -584,7 +584,8 @@ export default function App() {
   const generateFinalReport = async () => {
     setStep('PROCESSING');
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({
+  apiKey: import.meta.env.VITE_GEMINI_API_KEY});
       const { total, categories } = calculateFinalScores;
       const PAI_DISPLAY = total; // 유일한 진실원 (Single Source of Truth)
       
@@ -629,16 +630,17 @@ export default function App() {
       `;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-pro-preview',
-        contents: prompt,
-      });
+  model: 'gemini-3-pro-preview',
+  contents: prompt,
+});
 
-      setAiReport(response.text || "리포트 생성 중 오류가 발생했습니다.");
-      setStep('REPORT');
-    } catch (error) {
-      console.error("AI Error:", error);
-      setStep('REPORT');
-    }
+if (!response?.text) {
+  throw new Error("Empty AI response");
+}
+
+setAiReport(response.text);
+setStep('REPORT');
+}
   };
 
   // --- Header for Flow Steps ---
