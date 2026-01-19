@@ -222,9 +222,6 @@ const DiagnosticTool = ({
   const PAI_DISPLAY = finalResult?.pai ?? 0;
 
 
-  const [scores, setScores] = useState<Record<string, number>>(
-  Object.fromEntries(DIAGNOSTIC_CATEGORIES.map(c => [c.id, 50]))
-);
 
   const predictedLevel = useMemo(() => {
     return UNIVERSITY_LEVELS.find(l => PAI_DISPLAY >= l.range[0] && PAI_DISPLAY <= l.range[1]) || UNIVERSITY_LEVELS[UNIVERSITY_LEVELS.length - 1];
