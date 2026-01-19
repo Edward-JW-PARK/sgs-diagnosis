@@ -219,6 +219,20 @@ const DiagnosticTool = ({
   } | null;
 }) => {
 
+  const initialScores = useMemo(() => {
+  const base: Record<string, number> = {};
+  DIAGNOSTIC_CATEGORIES.forEach(cat => {
+    base[cat.id] = finalResult?.categories?.[cat.id] ?? 0;
+  });
+  return base;
+}, [finalResult]);
+
+const [scores, setScores] = useState<Record<string, number>>(initialScores);
+  
+  useEffect(() => {
+  setScores(initialScores);
+}, [initialScores]);
+
   const PAI_DISPLAY = finalResult?.pai ?? 0;
 
 
@@ -291,24 +305,24 @@ const DiagnosticTool = ({
 
                 <div className="flex items-baseline gap-4 mb-4">
                   <span className="text-7xl md:text-9xl font-black text-white leading-none tracking-tighter">
-                    {finalResult.pai} {/* [1/3] 시뮬레이터 카드 */}
+                    {PAI_DISPLAY} {/* [1/3] 시뮬레이터 카드 */}
                   </span>
                   <span className="text-xl md:text-3xl text-slate-500 font-black tracking-widest opacity-50">/ 100</span>
                 </div>
                 
                 <p className="text-teal-300/80 text-[10px] md:text-xs font-bold mb-10 md:mb-14">
-                  SKY 합격생 평균 패턴 대비 달성률: {finalResult.pai}%
+                  SKY 합격생 평균 패턴 대비 달성률: {PAI_DISPLAY}%
                 </p>
                 
                 <div className="mb-12 md:mb-16 bg-white/5 rounded-3xl p-6 md:p-8 border border-white/5 shadow-inner">
                   <div className="flex justify-between items-center mb-4">
                     <span className="text-xs md:text-sm text-slate-400 font-bold uppercase tracking-widest">SKY Benchmark Match</span>
-                    <span className="font-black text-teal-400 text-lg md:text-2xl">{finalResult.pai}%</span>
+                    <span className="font-black text-teal-400 text-lg md:text-2xl">{PAI_DISPLAY}%</span>
                   </div>
                   <div className="w-full bg-slate-900 h-5 md:h-6 rounded-full overflow-hidden p-1 border border-white/5">
                     <div 
                       className="h-full bg-gradient-to-r from-blue-700 via-blue-400 to-teal-400 transition-all duration-1000 ease-out rounded-full shadow-[0_0_20px_rgba(45,212,191,0.4)]" 
-                      style={{ width: `${finalResult.pai}%` }}
+                      style={{ width: `${PAI_DISPLAY}%` }}
                     />
                   </div>
                   <p className="mt-4 text-[9px] md:text-[11px] text-slate-500 italic">
@@ -865,11 +879,11 @@ const level =
                   <p className="text-teal-400 font-black uppercase tracking-widest text-xs mb-4">Potential Academic Index</p>
                   <div className="flex items-baseline justify-center md:justify-start gap-4 mb-4">
                     <span className="text-8xl md:text-9xl font-black tracking-tighter leading-none">
-                      {finalResult.pai} {/* [3/3] 리포트 헤더 점수 */}
+                      {PAI_DISPLAY} {/* [3/3] 리포트 헤더 점수 */}
                     </span>
                     <span className="text-2xl md:text-3xl text-slate-500 font-bold opacity-50">/ 100</span>
                   </div>
-                  <p className="text-teal-300/80 text-[10px] md:text-xs font-bold mb-8 md:mb-12">SKY 합격생 평균 패턴 대비 달성률: {finalResult.pai}%</p>
+                  <p className="text-teal-300/80 text-[10px] md:text-xs font-bold mb-8 md:mb-12">SKY 합격생 평균 패턴 대비 달성률: {PAI_DISPLAY}%</p>
                   <div className="p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20 backdrop-blur-md print:bg-slate-800">
                     <p className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-widest">Predicted Tier</p>
                     <p className="text-2xl md:text-3xl font-black text-white">{level.grade}: {level.name}</p>
