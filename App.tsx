@@ -208,9 +208,19 @@ const DiagnosticFrame = () => (
 
 // App JSX
 
-const DiagnosticTool = ({ onStart }: { onStart: () => void }) => {
+const DiagnosticTool = ({
+  onStart,
+  finalResult
+}: {
+  onStart: () => void;
+  finalResult: {
+    pai: number;
+    categories: Record<string, number>;
+  } | null;
+}) => {
 
   const PAI_DISPLAY = finalResult?.pai ?? 0;
+
 
   const [scores, setScores] = useState<Record<string, number>>(
   Object.fromEntries(DIAGNOSTIC_CATEGORIES.map(c => [c.id, 50]))
@@ -998,7 +1008,10 @@ const level =
       <Hero onStart={startFlow} />
       <ProblemDefinition />
       <DiagnosticFrame />
-      <DiagnosticTool onStart={startFlow} />
+      <DiagnosticTool
+  onStart={startFlow}
+  finalResult={finalResult}
+/>
       <UniversityMatrix onStart={startFlow} />
       <SGSSolution />
       <section className="py-24 md:py-44 bg-blue-900 text-white text-center relative overflow-hidden">
