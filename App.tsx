@@ -859,7 +859,7 @@ if (step === 'REPORT') {
 
   const radarData = DIAGNOSTIC_CATEGORIES.map(cat => ({
     subject: cat.name,
-    student: Math.round(finalResult.categories[cat.id]),
+    student: Math.round(finalResult.categories[cat.id] ?? 0),
     sky: 100,
   }));
 
@@ -868,7 +868,7 @@ if (step === 'REPORT') {
       l =>
         finalResult.pai >= l.range[0] &&
         finalResult.pai <= l.range[1]
-    ) || UNIVERSITY_LEVELS.at(-1);
+    ) || UNIVERSITY_LEVELS[UNIVERSITY_LEVELS.length - 1];
 
   return (
     <div className="min-h-screen bg-gray-50 pt-20 pb-20 print:bg-white">
@@ -876,16 +876,17 @@ if (step === 'REPORT') {
 
       <div className="container mx-auto px-4 max-w-4xl print:max-w-none print:px-0">
 
-        {/* ================= 리포트 헤더 ================= */}
+        {/* ===== 리포트 헤더 ===== */}
         <div className="bg-slate-950 rounded-[2.5rem] p-8 md:p-14 text-white shadow-2xl mb-8 border border-white/5 print:rounded-none print:shadow-none print:bg-slate-900">
           <div className="flex flex-col md:flex-row justify-between gap-6 mb-12">
             <div>
-              <div className="flex flex-wrap items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-[10px] font-bold border border-teal-500/20">
                   <CheckCircle2 size={12} />
                   정밀 진단 완료: {userInfo.uniqueCode}
                 </div>
               </div>
+
               <h1 className="text-4xl md:text-5xl font-black tracking-tight">
                 {userInfo.name} 학생 <span className="text-slate-500">PAI 리포트</span>
               </h1>
@@ -909,6 +910,7 @@ if (step === 'REPORT') {
               <p className="text-teal-400 font-black uppercase tracking-widest text-xs mb-4">
                 Potential Academic Index
               </p>
+
               <div className="flex items-baseline gap-4 mb-4">
                 <span className="text-8xl md:text-9xl font-black tracking-tighter leading-none">
                   {PAI_DISPLAY}
@@ -917,6 +919,7 @@ if (step === 'REPORT') {
                   / 100
                 </span>
               </div>
+
               <p className="text-teal-300/80 text-xs font-bold mb-8">
                 SKY 합격생 평균 패턴 대비 달성률: {PAI_DISPLAY}%
               </p>
@@ -942,7 +945,7 @@ if (step === 'REPORT') {
                     dataKey="subject"
                     tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 700 }}
                   />
-                  <PolarRadiusAxis domain={[0, 100]} tick={false} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
                   <Radar
                     dataKey="student"
                     stroke="#2dd4bf"
@@ -962,7 +965,7 @@ if (step === 'REPORT') {
           </div>
         </div>
 
-        {/* ================= 리포트 본문 ================= */}
+        {/* ===== 리포트 본문 ===== */}
         <div className="space-y-12">
           <div className="bg-white rounded-[2.5rem] p-8 md:p-14 shadow-xl border border-gray-100 print:rounded-none print:shadow-none print:border-none">
             <div className="prose prose-blue max-w-none">
@@ -973,7 +976,7 @@ if (step === 'REPORT') {
           </div>
         </div>
 
-        {/* ================= CTA ================= */}
+        {/* ===== CTA ===== */}
         <div className="mt-16 bg-teal-50 border border-teal-100 rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 print:hidden">
           <div className="bg-teal-500 text-white p-4 rounded-2xl shadow-lg">
             <CheckCircle2 size={32} />
@@ -997,5 +1000,19 @@ if (step === 'REPORT') {
 
       <Footer />
     </div>
+  );
+}
+
+  // 🔒 기본 HOME 화면 (fallback return)
+  return (
+    <>
+      <Hero onStart={startFlow} />
+      <ProblemDefinition />
+      <DiagnosticFrame />
+      <DiagnosticTool onStart={startFlow} finalResult={finalResult} />
+      <UniversityMatrix onStart={startFlow} />
+      <SGSSolution />
+      <Footer />
+    </>
   );
 }
