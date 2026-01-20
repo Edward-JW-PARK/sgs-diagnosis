@@ -34,6 +34,7 @@ import {
 } from 'recharts';
 
 import { DIAGNOSTIC_CATEGORIES, UNIVERSITY_LEVELS, DIAGNOSTIC_QUESTIONS } from './types';
+import { parseAIReport } from "./lib/reportParser";
 
 // --- Types for Flow ---
 type AppStep = 'HOME' | 'APPLY' | 'PAYMENT' | 'TEST' | 'PROCESSING' | 'REPORT';
@@ -931,21 +932,15 @@ const level =
           </div>
 
           <div className="space-y-12 print:space-y-8">
-            <div className="bg-white rounded-[2.5rem] p-8 md:p-14 shadow-xl border border-gray-100 print:rounded-none print:shadow-none print:border-none print:p-4">
-              <div className="prose prose-blue max-w-none">
-                {aiReport ? (
-                  aiReport.split('\n').map((line, i) => {
-                    const cleanLine = line.replace(/[*#]/g, '').trim();
-                    if (!cleanLine || cleanLine === "---") return null;
+  <div className="bg-white rounded-[2.5rem] p-8 md:p-14 shadow-xl border border-gray-100 print:rounded-none print:shadow-none print:border-none print:p-4">
+    <div className="prose prose-blue max-w-none">
+      {aiReport
+        ? parseAIReport(aiReport)
+        : <p className="text-gray-400 italic">리포트를 불러오는 중입니다...</p>}
+    </div>
+  </div>
+</div>
 
-                    const mainSectionMatch = cleanLine.match(/^([1-7]\.\s.*)/);
-                    if (mainSectionMatch) {
-                      return (
-                        <div key={i} className="mt-20 first:mt-0 mb-10 pt-12 border-t border-gray-100 first:border-t-0">
-                          <h3 className="text-3xl md:text-5xl font-black text-gray-900 tracking-tighter leading-none print:text-3xl">{cleanLine}</h3>
-                        </div>
-                      );
-                    }
 
                     const domainSectionMatch = cleanLine.match(/^([1-6]|\d|[①-⑥])\.\s.*|^(①|②|③|④|⑤|⑥)\s.*/);
                     if (domainSectionMatch || cleanLine.match(/^(①|②|③|④|⑤|⑥)\s.*/)) {
