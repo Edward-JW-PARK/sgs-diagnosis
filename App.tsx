@@ -854,221 +854,147 @@ const generateFinalReport = async () => {
 );
 
 
-  if (step === 'REPORT') {
-    
-    if (!finalResult) return null;
+if (step === 'REPORT') {
+  if (!finalResult) return null;
 
-const radarData = DIAGNOSTIC_CATEGORIES.map(cat => ({
-  subject: cat.name,
-  student: Math.round(finalResult.categories[cat.id]),
-  sky: 100
-}));
+  const radarData = DIAGNOSTIC_CATEGORIES.map(cat => ({
+    subject: cat.name,
+    student: Math.round(finalResult.categories[cat.id]),
+    sky: 100,
+  }));
 
-const level =
-  UNIVERSITY_LEVELS.find(
-    l =>
-      finalResult.pai >= l.range[0] &&
-      finalResult.pai <= l.range[1]
-  ) || UNIVERSITY_LEVELS.at(-1);
-
-
- 
-    return (
-      <div className="min-h-screen bg-gray-50 pt-20 pb-20 print:pt-0 print:pb-0 print:bg-white">
-        <FlowHeader />
-        <div className="container mx-auto px-4 max-w-4xl print:max-w-none print:px-0">
-          <div className="bg-slate-950 rounded-[2.5rem] p-8 md:p-14 text-white shadow-2xl mb-8 relative overflow-hidden border border-white/5 print:rounded-none print:shadow-none print:bg-slate-900">
-            <div className="absolute top-0 right-0 p-8 opacity-10 rotate-12 print:hidden"><Target size={180}/></div>
-            <div className="relative z-10">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 print:mb-8">
-                <div>
-                  <div className="flex flex-wrap items-center gap-3 mb-4">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-[10px] font-bold border border-teal-500/20">
-                      <CheckCircle2 size={12}/> 정밀 진단 완료: {userInfo.uniqueCode}
-                    </div>
-                    <div className="group relative inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 text-slate-400 text-[10px] font-bold border border-white/5 cursor-help">
-                      Standard v1.0 (SKY 기준/Strict 기준)
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-slate-800 text-white text-[9px] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-xl">
-                        엄격 모드: 상위 1% 대학 합격생의 행동 패턴만을 추출하여 정교하게 보정된 고난도 진단 알고리즘입니다.
-                      </div>
-                    </div>
-                  </div>
-                  <h1 className="text-4xl md:text-5xl font-black tracking-tight">{userInfo.name} 학생 <span className="text-slate-500">PAI 리포트</span></h1>
-                </div>
-                <div className="flex gap-2 print:hidden">
-                  <button onClick={() => window.print()} className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors border border-white/5 flex items-center gap-2 text-xs font-bold"><Download size={20}/> PDF 저장</button>
-                  <button className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 transition-colors border border-white/5"><Share2 size={20}/></button>
-                </div>
-              </div>
-              <div className="grid md:grid-cols-2 gap-12 items-center print:gap-8">
-                <div className="text-center md:text-left">
-                  <p className="text-teal-400 font-black uppercase tracking-widest text-xs mb-4">Potential Academic Index</p>
-                  <div className="flex items-baseline justify-center md:justify-start gap-4 mb-4">
-                    <span className="text-8xl md:text-9xl font-black tracking-tighter leading-none">
-                      {PAI_DISPLAY} {/* [3/3] 리포트 헤더 점수 */}
-                    </span>
-                    <span className="text-2xl md:text-3xl text-slate-500 font-bold opacity-50">/ 100</span>
-                  </div>
-                  <p className="text-teal-300/80 text-[10px] md:text-xs font-bold mb-8 md:mb-12">SKY 합격생 평균 패턴 대비 달성률: {PAI_DISPLAY}%</p>
-                  <div className="p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20 backdrop-blur-md print:bg-slate-800">
-                    <p className="text-slate-400 text-xs font-bold mb-2 uppercase tracking-widest">Predicted Tier</p>
-                    <p className="text-2xl md:text-3xl font-black text-white">{level.grade}: {level.name}</p>
-                    <p className="text-teal-400 text-sm font-medium mt-2">{level.universities.join(' · ')}</p>
-                  </div>
-                </div>
-                <div className="h-[300px] md:h-[350px] print:h-[280px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-                      <PolarGrid stroke="#334155" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: '#94a3b8', fontWeight: 700 }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                      <Radar name="Student" dataKey="student" stroke="#2dd4bf" strokeWidth={3} fill="#2dd4bf" fillOpacity={0.4} />
-                      <Radar name="SKY" dataKey="sky" stroke="#334155" fill="#334155" fillOpacity={0.1} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-12 print:space-y-8">
-  <div className="bg-white rounded-[2.5rem] p-8 md:p-14 shadow-xl border border-gray-100 print:rounded-none print:shadow-none print:border-none print:p-4">
-    <div className="prose prose-blue max-w-none">
-      {aiReport
-        ? parseAIReport(aiReport)
-        : <p className="text-gray-400 italic">리포트를 불러오는 중입니다...</p>}
-    </div>
-  </div>
-</div>
-
-
-                    const domainSectionMatch = cleanLine.match(/^([1-6]|\d|[①-⑥])\.\s.*|^(①|②|③|④|⑤|⑥)\s.*/);
-                    if (domainSectionMatch || cleanLine.match(/^(①|②|③|④|⑤|⑥)\s.*/)) {
-                      return (
-                        <h4 key={i} className="text-2xl md:text-4xl font-black text-slate-800 mt-16 mb-8 flex items-center gap-4 border-l-[12px] border-blue-600 pl-6 tracking-tight print:text-2xl">
-                          {cleanLine}
-                        </h4>
-                      );
-                    }
-
-                    const prefixes = ["판정:", "데이터 근거:", "SGS 분석 코멘트:", "즉시 실행 처방:"];
-                    const matchedPrefix = prefixes.find(p => cleanLine.startsWith(p));
-                    if (matchedPrefix) {
-                      const rest = cleanLine.slice(matchedPrefix.length).trim();
-                      return (
-                        <div key={i} className="mb-8">
-                          <span className="font-black text-gray-400 text-[10px] md:text-xs uppercase tracking-[0.2em] block mb-2 opacity-80">{matchedPrefix}</span>
-                          <p className={`text-gray-700 font-light text-base md:text-xl pl-5 border-l-2 border-gray-100 leading-relaxed ${matchedPrefix === "SGS 분석 코멘트:" ? "font-medium" : ""}`}>{rest}</p>
-                        </div>
-                      );
-                    }
-
-                    const isFutureScenario = cleanLine.startsWith("⚡ 미래 시뮬레이션 :");
-                    if (isFutureScenario) {
-                      const content = cleanLine.replace("⚡ 미래 시뮬레이션 :", "").trim();
-                      const parts = content.split('\n').filter(l => l.trim());
-                      return (
-                        <div key={i} className="mt-8 mb-14 bg-indigo-50/40 p-8 md:p-10 rounded-[2rem] border-l-8 border-indigo-600 shadow-sm print:bg-gray-50 print:border-gray-300">
-                          <p className="text-indigo-900 font-bold text-base md:text-xl italic flex items-start gap-3 leading-relaxed">
-                            <Zap size={24} className="shrink-0 text-indigo-600 mt-1" />
-                            <span className="flex flex-col gap-4 w-full">
-                              <span className="font-black border-b border-indigo-200 pb-3 text-sm md:text-base tracking-widest uppercase">⚡ 미래 시뮬레이션 : {parts[0]}</span>
-                              {parts.slice(1).map((l, idx) => (
-                                <span key={idx} className="text-slate-600 font-light text-base md:text-lg">{l}</span>
-                              ))}
-                            </span>
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    if (cleanLine.startsWith("상태 위치:")) {
-                      return (
-                        <div key={i} className="my-10 p-8 bg-slate-900 rounded-[1.5rem] border border-slate-800 text-center shadow-2xl">
-                          <p className="text-xl md:text-2xl font-black text-white tracking-[0.3em] uppercase">{cleanLine}</p>
-                        </div>
-                      );
-                    }
-
-                    if (cleanLine.startsWith("▶")) {
-                      return <p key={i} className="mb-4 pl-8 text-gray-700 font-bold text-base md:text-xl border-l-4 border-blue-500 py-2 leading-relaxed">{cleanLine}</p>;
-                    }
-
-                    return <p key={i} className={`mb-10 text-gray-600 leading-relaxed font-light text-base md:text-lg print:text-sm print:mb-5`}>{cleanLine}</p>;
-                  }).filter(Boolean)
-                ) : (
-                  <p className="text-gray-400 italic">리포트를 불러오는 중입니다...</p>
-                )}
-              </div>
-            </div>
-            <div className="bg-teal-50 border border-teal-100 rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 print:hidden">
-              <div className="bg-teal-500 text-white p-4 rounded-2xl shadow-lg shrink-0"><CheckCircle2 size={32}/></div>
-              <div className="text-center md:text-left flex-1">
-                <h4 className="text-xl font-black text-teal-900 mb-2">진단 결과에 따른 맞춤 처방이 필요하십니까?</h4>
-                <p className="text-teal-700 leading-relaxed">이 진단 결과를 바탕으로 학생의 학습 구조를 완전히 전환할 <strong>'SGS 12주 트레이닝'</strong> 전문가 상담을 신청하세요.</p>
-              </div>
-              <button className="shrink-0 w-full md:w-auto bg-gray-900 text-white px-8 py-5 rounded-full font-black text-sm hover:bg-gray-800 transition-all shadow-xl">1:1 전문가 상담 예약</button>
-            </div>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
-  }
+  const level =
+    UNIVERSITY_LEVELS.find(
+      l =>
+        finalResult.pai >= l.range[0] &&
+        finalResult.pai <= l.range[1]
+    ) || UNIVERSITY_LEVELS.at(-1);
 
   return (
-    <div className="min-h-screen selection:bg-blue-500 selection:text-white">
-      <nav className="fixed top-0 w-full z-50 bg-white/90 backdrop-blur-2xl border-b border-gray-100 print:hidden">
-        <div className="container mx-auto px-4 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer group" onClick={resetToHome}>
-            <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black italic shadow-lg group-hover:scale-110 transition-transform">S</div>
-            <span className="text-xl font-black text-gray-900 tracking-tighter">SGS <span className="text-blue-600 uppercase">Academy</span></span>
-          </div>
-          <div className="hidden lg:flex gap-12 text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">
-            <a href="#diagnosis" className="hover:text-blue-600 transition-colors">PAI Diagnosis</a>
-            <a href="#" className="hover:text-blue-600 transition-colors">Methodology</a>
-            <a href="#" className="hover:text-blue-600 transition-colors">Training</a>
-            <a href="#" className="hover:text-blue-600 transition-colors">Consulting</a>
-          </div>
-          <div className="flex items-center gap-3">
-              <button onClick={startFlow} className="bg-gray-900 text-white px-8 py-3.5 rounded-full text-[10px] md:text-xs font-black hover:bg-blue-600 transition-all shadow-xl hover:-translate-y-0.5 tracking-widest uppercase">진단 신청하기</button>
-              <button className="lg:hidden p-2 text-gray-900" onClick={() => setIsMenuOpen(!isMenuOpen)}><Menu /></button>
-          </div>
-        </div>
-      </nav>
-      <Hero onStart={startFlow} />
-      <ProblemDefinition />
-      <DiagnosticFrame />
-      <DiagnosticTool
-  onStart={startFlow}
-  finalResult={finalResult}
-/>
-      <UniversityMatrix onStart={startFlow} />
-      <SGSSolution />
-      <section className="py-24 md:py-44 bg-blue-900 text-white text-center relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-blue-950 to-teal-950 opacity-90"></div>
-        <div className="container mx-auto px-4 relative z-10">
-          <h2 className="text-3xl md:text-6xl font-black mb-10 leading-tight tracking-tight px-4">당신의 자녀는 고등학교에서<br className="hidden md:block"/> ‘버텨낼’ 실력입니까, 아니면 ‘밀려날’ 실력입니까?</h2>
-          <div className="max-w-3xl mx-auto space-y-6 mb-16 px-4">
-            <p className="text-lg md:text-2xl text-blue-100/80 leading-relaxed font-light mb-4">이 진단은 단순 테스트가 아니라, 현재 학습 습관을 ‘대학 레벨 기준’으로 해석해주는 리포트입니다.</p>
-            <div className="inline-block bg-white/10 backdrop-blur-xl border border-white/20 p-6 md:p-10 rounded-3xl mt-12">
-              <div className="flex flex-col items-center gap-2">
-                <span className="text-teal-400 text-xs md:text-sm font-black uppercase tracking-[0.3em]">Special Launch Offer</span>
-                <div className="flex items-center gap-4">
-                  <span className="text-white/40 line-through text-xl md:text-3xl font-bold">49,000원</span>
-                  <span className="text-white text-4xl md:text-7xl font-black">9,900원</span>
+    <div className="min-h-screen bg-gray-50 pt-20 pb-20 print:bg-white">
+      <FlowHeader />
+
+      <div className="container mx-auto px-4 max-w-4xl print:max-w-none print:px-0">
+
+        {/* ================= 리포트 헤더 ================= */}
+        <div className="bg-slate-950 rounded-[2.5rem] p-8 md:p-14 text-white shadow-2xl mb-8 border border-white/5 print:rounded-none print:shadow-none print:bg-slate-900">
+          <div className="flex flex-col md:flex-row justify-between gap-6 mb-12">
+            <div>
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/20 text-teal-400 text-[10px] font-bold border border-teal-500/20">
+                  <CheckCircle2 size={12} />
+                  정밀 진단 완료: {userInfo.uniqueCode}
                 </div>
-                <p className="text-blue-200 text-xs md:text-lg mt-4 font-medium italic">"학원 한 달 비용의 1/10도 안 되는 가격으로 3년 후 결과를 미리 확인하세요."</p>
               </div>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tight">
+                {userInfo.name} 학생 <span className="text-slate-500">PAI 리포트</span>
+              </h1>
+            </div>
+
+            <div className="flex gap-2 print:hidden">
+              <button
+                onClick={() => window.print()}
+                className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5 flex items-center gap-2 text-xs font-bold"
+              >
+                <Download size={18} /> PDF 저장
+              </button>
+              <button className="p-3 bg-white/5 rounded-2xl hover:bg-white/10 border border-white/5">
+                <Share2 size={18} />
+              </button>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row gap-6 justify-center px-4 max-w-lg mx-auto md:max-w-none">
-            <button onClick={startFlow} className="w-full md:w-auto bg-teal-500 text-white px-12 py-6 rounded-full font-black text-xl md:text-3xl hover:bg-teal-400 transition-all shadow-[0_30px_60px_rgba(20,184,166,0.4)] flex items-center justify-center gap-4 group">
-              내 아이의 ‘진짜 위치’ 확인하기 <ChevronRight size={32} className="group-hover:translate-x-2 transition-transform" />
-            </button>
+
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <p className="text-teal-400 font-black uppercase tracking-widest text-xs mb-4">
+                Potential Academic Index
+              </p>
+              <div className="flex items-baseline gap-4 mb-4">
+                <span className="text-8xl md:text-9xl font-black tracking-tighter leading-none">
+                  {PAI_DISPLAY}
+                </span>
+                <span className="text-2xl md:text-3xl text-slate-500 font-bold opacity-50">
+                  / 100
+                </span>
+              </div>
+              <p className="text-teal-300/80 text-xs font-bold mb-8">
+                SKY 합격생 평균 패턴 대비 달성률: {PAI_DISPLAY}%
+              </p>
+
+              <div className="p-6 bg-blue-600/10 rounded-3xl border border-blue-500/20">
+                <p className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">
+                  Predicted Tier
+                </p>
+                <p className="text-2xl md:text-3xl font-black text-white">
+                  {level.grade}: {level.name}
+                </p>
+                <p className="text-teal-400 text-sm mt-2">
+                  {level.universities.join(" · ")}
+                </p>
+              </div>
+            </div>
+
+            <div className="h-[300px] md:h-[350px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+                  <PolarGrid stroke="#334155" />
+                  <PolarAngleAxis
+                    dataKey="subject"
+                    tick={{ fontSize: 9, fill: "#94a3b8", fontWeight: 700 }}
+                  />
+                  <PolarRadiusAxis domain={[0, 100]} tick={false} />
+                  <Radar
+                    dataKey="student"
+                    stroke="#2dd4bf"
+                    strokeWidth={3}
+                    fill="#2dd4bf"
+                    fillOpacity={0.4}
+                  />
+                  <Radar
+                    dataKey="sky"
+                    stroke="#334155"
+                    fill="#334155"
+                    fillOpacity={0.1}
+                  />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-      </section>
+
+        {/* ================= 리포트 본문 ================= */}
+        <div className="space-y-12">
+          <div className="bg-white rounded-[2.5rem] p-8 md:p-14 shadow-xl border border-gray-100 print:rounded-none print:shadow-none print:border-none">
+            <div className="prose prose-blue max-w-none">
+              {aiReport
+                ? parseAIReport(aiReport)
+                : <p className="text-gray-400 italic">리포트를 불러오는 중입니다...</p>}
+            </div>
+          </div>
+        </div>
+
+        {/* ================= CTA ================= */}
+        <div className="mt-16 bg-teal-50 border border-teal-100 rounded-3xl p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 print:hidden">
+          <div className="bg-teal-500 text-white p-4 rounded-2xl shadow-lg">
+            <CheckCircle2 size={32} />
+          </div>
+          <div className="flex-1 text-center md:text-left">
+            <h4 className="text-xl font-black text-teal-900 mb-2">
+              진단 결과에 따른 맞춤 처방이 필요하십니까?
+            </h4>
+            <p className="text-teal-700">
+              이 진단 결과를 바탕으로 학생의 학습 구조를 완전히 전환할
+              <strong> ‘SGS 12주 트레이닝’ </strong>
+              상담을 신청하세요.
+            </p>
+          </div>
+          <button className="bg-gray-900 text-white px-8 py-5 rounded-full font-black text-sm shadow-xl">
+            1:1 전문가 상담 예약
+          </button>
+        </div>
+
+      </div>
+
       <Footer />
     </div>
   );
