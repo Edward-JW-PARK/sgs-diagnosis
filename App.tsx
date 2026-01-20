@@ -219,21 +219,31 @@ const DiagnosticTool = ({
   } | null;
 }) => {
 
+  // 1️⃣ 초기 점수 (finalResult가 있으면 고정값, 없으면 0)
   const initialScores = useMemo(() => {
-  const base: Record<string, number> = {};
-  DIAGNOSTIC_CATEGORIES.forEach(cat => {
-    base[cat.id] = finalResult?.categories?.[cat.id] ?? 0;
-  });
-  return base;
-}, [finalResult]);
+    const base: Record<string, number> = {};
+    DIAGNOSTIC_CATEGORIES.forEach(cat => {
+      base[cat.id] = finalResult?.categories?.[cat.id] ?? 0;
+    });
+    return base;
+  }, [finalResult]);
 
-const [scores, setScores] = useState<Record<string, number>>(initialScores);
-  
+  const [scores, setScores] = useState<Record<string, number>>(initialScores);
+
+  // finalResult가 들어오면 슬라이더도 동기화
   useEffect(() => {
-  setScores(initialScores);
-}, [initialScores]);
+    setScores(initialScores);
+  }, [initialScores]);
 
-  const PAI_DISPLAY = finalResult?.pai ?? 0;
+const simulatedPAI = useMemo(
+  () => calculatePAI(scores),
+  [scores]
+);
+
+const displayPAI = finalResult ? finalResult.pai : simulatedPAI;
+
+const PAI_DISPLAY = displayPAI;
+
 
 
 
@@ -627,33 +637,33 @@ const finalResult = useMemo<{
 
 
 const generateFinalReport = async () => {
+  // 🔒 중복 호출 방지
+  if (step === "PROCESSING") return;
   if (!finalResult) return;
 
   setStep("PROCESSING");
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
   try {
     const response = await fetch("/api/report", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userInfo,
         pai: finalResult.pai,
         categories: finalResult.categories,
       }),
+      signal: controller.signal,
     });
 
-    // ✅ 1단계: 원문 텍스트 확보 (에러 디버깅용)
     const raw = await response.text();
-    console.log("REPORT API status:", response.status);
-    console.log("REPORT API raw:", raw);
 
     if (!response.ok) {
       throw new Error(raw);
     }
 
-    // ✅ 2단계: 정상일 때만 JSON 파싱
     const json = JSON.parse(raw);
 
     if (!json.reportText) {
@@ -663,10 +673,16 @@ const generateFinalReport = async () => {
     setAiReport(json.reportText);
     setStep("REPORT");
 
-  } catch (err) {
-    console.error("FINAL REPORT ERROR:", err);
-    alert("리포트 생성 중 오류가 발생했습니다.\n콘솔 로그를 확인하세요.");
+  } catch (err: any) {
+    if (err.name === "AbortError") {
+      alert("리포트 생성 시간이 초과되었습니다. 다시 시도해주세요.");
+    } else {
+      console.error("FINAL REPORT ERROR:", err);
+      alert("리포트 생성 중 오류가 발생했습니다.");
+    }
     setStep("TEST");
+  } finally {
+    clearTimeout(timeoutId);
   }
 };
 
