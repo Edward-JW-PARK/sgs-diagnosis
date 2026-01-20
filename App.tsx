@@ -1001,7 +1001,6 @@ if (step === 'REPORT') {
       <Footer />
     </div>
   );
-}
 
   // 🔒 기본 HOME 화면 (fallback return)
   return (
