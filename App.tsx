@@ -629,35 +629,44 @@ const finalResult = useMemo<{
 const generateFinalReport = async () => {
   if (!finalResult) return;
 
-  setStep('PROCESSING');
+  setStep("PROCESSING");
 
   try {
-    const response = await fetch(
-      import.meta.env.VITE_SGS_GAS_URL,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userInfo,
-          pai: finalResult.pai,
-          categories: finalResult.categories
-        })
-      }
-    );
+    const response = await fetch("/api/report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userInfo,
+        pai: finalResult.pai,
+        categories: finalResult.categories,
+      }),
+    });
 
-    const json = await response.json();
+    // ✅ 1단계: 원문 텍스트 확보 (에러 디버깅용)
+    const raw = await response.text();
+    console.log("REPORT API status:", response.status);
+    console.log("REPORT API raw:", raw);
 
-    if (!json.success || !json.reportText) {
-      throw new Error("Invalid GAS response");
+    if (!response.ok) {
+      throw new Error(raw);
+    }
+
+    // ✅ 2단계: 정상일 때만 JSON 파싱
+    const json = JSON.parse(raw);
+
+    if (!json.reportText) {
+      throw new Error("Invalid report API response");
     }
 
     setAiReport(json.reportText);
-    setStep('REPORT');
+    setStep("REPORT");
 
   } catch (err) {
-    console.error(err);
-    alert("리포트 생성 중 오류가 발생했습니다.");
-    setStep('TEST');
+    console.error("FINAL REPORT ERROR:", err);
+    alert("리포트 생성 중 오류가 발생했습니다.\n콘솔 로그를 확인하세요.");
+    setStep("TEST");
   }
 };
 
